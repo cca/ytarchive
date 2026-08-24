@@ -24,10 +24,19 @@ YouTube video archival tool.
 
 ## Usage
 
+### Quick Start Workflow
+
+```bash
+# 1. List all videos from CCA channel (saves to archive/videos.json)
+uv run ytarchive list --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
+# 2. Download videos ten at a time (reads archive/videos.json, saves to archive/)
+uv run ytarchive archive --max-results 10
+```
+
 ### Finding a Channel
 
 The tool accepts multiple formats:
-- **Channel ID**: `UC_x5XG1OV2P6uZZ5FSM9Ttw` (starts with UC)
+- **Channel ID**: `UC3clbBht0DU9hCSKvoP-Z_Q` (starts with UC)
 - **Username**: `CCAarts` (from youtube.com/user/CCAarts)
 - **Handle**: `@channelname` or `channelname` (from youtube.com/@channelname)
 
@@ -36,37 +45,39 @@ To find manually: Visit channel → View Page Source → Search for `"channelId"
 ### List all videos from a channel
 
 ```bash
-# By channel ID
-ytarchive list --channel-id UC_x5XG1OV2P6uZZ5FSM9Ttw
-
+# By channel ID (saves to archive/videos.json by default)
+ytarchive list --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
 # By username
 ytarchive list --channel-id CCAarts
-
 # By handle
 ytarchive list --channel-id @channelname
-
-# Save to file for later archival
-ytarchive list --channel-id CCAarts --output videos.json
+# Custom output location
+ytarchive list --channel-id CCAarts --output my-videos.json
 ```
 
 ### Archive videos
 
 ```bash
-# Archive all videos from channel (by username, handle, or ID)
-ytarchive archive --channel-id CCAarts --output-dir ./archive
-
-# Archive from saved list
-ytarchive archive --input-file videos.json --output-dir ./archive
-
+# Archive from default list location (archive/videos.json, skips existing by default)
+ytarchive archive
+# Archive from channel directly
+ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
+# Archive and overwrite existing files
+ytarchive archive --overwrite
 # Archive specific video IDs
-ytarchive archive --video-ids dQw4w9WgXcQ,jNQXAC9IVRw --output-dir ./archive
+ytarchive archive --video-ids dQw4w9WgXcQ,jNQXAC9IVRw
+# Custom output directory
+ytarchive archive --output-dir ./my-archive
 ```
 
 ### Options
 
 - `--max-results N`: Limit number of videos to process (default: all)
-- `--skip-existing`: Skip videos already downloaded
+- `--overwrite`: Overwrite existing videos (default: skip existing)
 - `--quality`: Video quality (best/1080p/720p/480p, default: best)
+- `--output`: For list command (default: archive/videos.json)
+- `--output-dir`: For archive command (default: archive)
+- `--input-file`: For archive command (default: archive/videos.json)
 
 ## Output Structure
 

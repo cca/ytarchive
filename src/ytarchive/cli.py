@@ -24,30 +24,29 @@ def cli():
 @cli.command()
 @click.option(
     "--channel-id",
+    required=True,
     help="YouTube channel ID, username, or @handle",
 )
 @click.option(
     "--max-results",
     type=int,
-    help="Maximum number of videos to retrieve",
+    help="Maximum number of videos to retrieve (default: all)",
 )
 @click.option(
     "--output",
-    type=click.Path(),
-    help="Save video list to JSON file",
+    type=click.Path(path_type=Path),
+    default="archive/videos.json",
+    help="Save video list to JSON file (default: archive/videos.json)",
 )
 @click.option(
     "--client-secrets",
+    type=click.Path(exists=True, path_type=Path),
     default="client_secrets.json",
-    help="Path to OAuth client secrets file",
+    help="Path to OAuth client secrets file (default: client_secrets.json)",
 )
-def list(channel_id: str, max_results: int | None, output: str | None, client_secrets: str):
+def list(channel_id: str, max_results: int | None, output: Path, client_secrets: Path):
     """List all videos from a YouTube channel."""
-    if not channel_id:
-        console.print("[red]Error: --channel-id is required[/red]")
-        raise click.Abort()
-
-    client = YouTubeClient(client_secrets)
+    client = YouTubeClient(str(client_secrets))
 
     # Resolve username/handle to channel ID if needed
     resolved_id = client.resolve_channel_id(channel_id)
@@ -82,12 +81,11 @@ def list(channel_id: str, max_results: int | None, output: str | None, client_se
     console.print(table)
     console.print(f"\n[green]Total videos: {len(videos)}[/green]")
 
-    # Save to file if requested
-    if output:
-        output_path = Path(output)
-        video_data = [v.model_dump(mode="json", by_alias=True) for v in videos]
-        output_path.write_text(json.dumps(video_data, indent=2))
-        console.print(f"\n[green]✓[/green] Saved video list to {output}")
+    # Save to file
+    output.parent.mkdir(parents=True, exist_ok=True)
+    video_data = [v.model_dump(mode="json", by_alias=True) for v in videos]
+    output.write_text(json.dumps(video_data, indent=2))
+    console.print(f"\n[green]✓[/green] Saved video list to {output}")
 
 
 @cli.command()
@@ -101,57 +99,58 @@ def list(channel_id: str, max_results: int | None, output: str | None, client_se
 )
 @click.option(
     "--input-file",
-    type=click.Path(exists=True),
-    help="JSON file containing video list from 'list' command",
+    type=click.Path(exists=True, path_type=Path),
+    default="archive/videos.json",
+    help="JSON file containing video list from 'list' command (default: archive/videos.json)",
 )
 @click.option(
     "--output-dir",
-    required=True,
-    help="Directory to save archived videos",
+    type=click.Path(path_type=Path),
+    default="archive",
+    help="Directory to save archived videos (default: archive)",
 )
 @click.option(
     "--max-results",
     type=int,
-    help="Maximum number of videos to archive",
+    help="Maximum number of videos to archive (default: all)",
 )
 @click.option(
-    "--skip-existing",
+    "--overwrite",
     is_flag=True,
-    help="Skip videos that have already been downloaded",
+    help="Overwrite existing videos (default: skip existing)",
 )
 @click.option(
     "--quality",
     type=click.Choice(["best", "1080p", "720p", "480p"]),
     default="best",
-    help="Video quality to download",
+    help="Video quality to download (default: best)",
 )
 @click.option(
     "--client-secrets",
+    type=click.Path(exists=True, path_type=Path),
     default="client_secrets.json",
-    help="Path to OAuth client secrets file",
+    help="Path to OAuth client secrets file (default: client_secrets.json)",
 )
 def archive(
     channel_id: str | None,
     video_ids: str | None,
-    input_file: str | None,
-    output_dir: str,
+    input_file: Path,
+    output_dir: Path,
     max_results: int | None,
-    skip_existing: bool,
+    overwrite: bool,
     quality: str,
-    client_secrets: str,
+    client_secrets: Path,
 ):
     """Archive YouTube videos with metadata and captions."""
-    client = YouTubeClient(client_secrets)
-    downloader = VideoDownloader(output_dir, quality, skip_existing)
+    client = YouTubeClient(str(client_secrets))
+    # Invert overwrite flag: skip_existing is the opposite
+    skip_existing = not overwrite
+    downloader = VideoDownloader(str(output_dir), quality, skip_existing)
 
     videos = []
 
     # Determine source of videos
-    if input_file:
-        console.print(f"[cyan]Loading videos from:[/cyan] {input_file}")
-        video_data = json.loads(Path(input_file).read_text())
-        videos = [Video(**v) for v in video_data]
-    elif channel_id:
+    if channel_id:
         # Resolve username/handle to channel ID if needed
         resolved_id = client.resolve_channel_id(channel_id)
         if not resolved_id:
@@ -164,8 +163,15 @@ def archive(
             video = client.get_video_details(vid_id)
             if video:
                 videos.append(video)
+    elif input_file.exists():
+        console.print(f"[cyan]Loading videos from:[/cyan] {input_file}")
+        video_data = json.loads(input_file.read_text())
+        videos = [Video(**v) for v in video_data]
     else:
-        console.print("[red]Error: Must provide --channel-id, --video-ids, or --input-file[/red]")
+        console.print(
+            "[red]Error: Must provide --channel-id, --video-ids, or ensure "
+            f"{input_file} exists[/red]"
+        )
         raise click.Abort()
 
     if not videos:
@@ -175,7 +181,10 @@ def archive(
     if max_results:
         videos = videos[:max_results]
 
-    console.print(f"\n[bold cyan]Archiving {len(videos)} video(s) to {output_dir}[/bold cyan]\n")
+    mode_str = "overwrite mode" if overwrite else "skip existing mode"
+    console.print(
+        f"\n[bold cyan]Archiving {len(videos)} video(s) to {output_dir} ({mode_str})[/bold cyan]\n"
+    )
 
     # Archive each video
     manifests = []
@@ -189,7 +198,7 @@ def archive(
             continue
 
     # Save archive index
-    index_path = Path(output_dir) / "archive_index.json"
+    index_path = output_dir / "archive_index.json"
     index_data = [m.model_dump(mode="json") for m in manifests]
     index_path.write_text(json.dumps(index_data, indent=2))
 

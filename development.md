@@ -31,11 +31,14 @@ uv run ruff format .
 
 ## Running the CLI
 ```bash
-# List videos
-uv run ytarchive list --channel-id UC_x5XG1OV2P6uZZ5FSM9Ttw
+# List videos (saves to archive/videos.json)
+uv run ytarchive list --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
 
-# Archive videos
-uv run ytarchive archive --channel-id UC_x5XG1OV2P6uZZ5FSM9Ttw --output-dir ./archive
+# Archive videos (reads from archive/videos.json, saves to archive/)
+uv run ytarchive archive
+
+# Or archive directly from channel
+uv run ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
 ```
 
 ## Release Checklist
