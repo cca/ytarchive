@@ -68,7 +68,7 @@ class VideoDownloader:
             manifest.thumbnail_file = str(thumbnail_path)
 
         # Download captions
-        caption_files = self._download_captions(video.id, video_dir)
+        caption_files = self._download_captions(video.id, video_dir, video.snippet.default_language)
         manifest.caption_files = caption_files
 
         # Save manifest
@@ -129,7 +129,8 @@ class VideoDownloader:
             "skip_download": True,
             "writethumbnail": True,
             "outtmpl": str(output_dir / "thumbnail"),
-            "quiet": True,
+            "quiet": False,  # Show errors for debugging
+            "no_warnings": True,  # Suppress warnings (like impersonation)
             "js_runtimes": {"node": {}, "deno": {}},
         }
 
@@ -147,16 +148,45 @@ class VideoDownloader:
 
         return None
 
-    def _download_captions(self, video_id: str, output_dir: Path) -> dict[str, str]:
-        """Download all available captions."""
+    def _download_captions(
+        self, video_id: str, output_dir: Path, original_language: str | None = None
+    ) -> dict[str, str]:
+        """Download original and English captions using yt-dlp.
+
+        Note: YouTube API caption download only works for captions YOU uploaded,
+        so we use yt-dlp which can download any public captions.
+
+        Args:
+            video_id: YouTube video ID
+            output_dir: Directory to save captions
+            original_language: Original video language (if available)
+
+        Returns:
+            Dictionary mapping language codes to file paths
+        """
+        return self._download_captions_ytdlp(video_id, output_dir, original_language)
+
+    def _download_captions_ytdlp(
+        self, video_id: str, output_dir: Path, original_language: str | None = None
+    ) -> dict[str, str]:
+        """Fallback method to download captions using yt-dlp.
+
+        Downloads only original language and English captions.
+        """
+        # Build subtitle languages list (original + en)
+        sub_langs = ["en"]
+        if original_language and original_language != "en":
+            sub_langs.insert(0, original_language)
+
         ydl_opts = {
             "skip_download": True,
             "writesubtitles": True,
             "writeautomaticsub": True,
-            "allsubtitles": True,
+            "subtitleslangs": sub_langs,  # Only download specific languages
             "subtitlesformat": "vtt",
             "outtmpl": str(output_dir / "captions"),
-            "quiet": True,
+            "quiet": False,  # Show errors
+            "no_warnings": True,  # Suppress warnings (like impersonation)
             "ignoreerrors": True,  # Continue on errors
             "js_runtimes": {"node": {}, "deno": {}},
         }
@@ -174,14 +204,17 @@ class VideoDownloader:
                 caption_files[lang] = str(caption_file)
 
             if caption_files:
-                console.print(f"  [green]✓[/green] Downloaded {len(caption_files)} caption(s)")
+                console.print(
+                    f"  [green]✓[/green] Downloaded {len(caption_files)} caption(s): "
+                    f"{', '.join(caption_files.keys())}"
+                )
             else:
-                console.print("  [yellow]⚠[/yellow] No captions available")
+                console.print("  [yellow]⚠[/yellow] No original or English captions available")
         except Exception as e:
-            # Show video ID in error for clarity
             error_msg = str(e)
             console.print(
-                f"  [yellow]⚠[/yellow] Could not download captions for video {video_id}: {error_msg}"
+                f"  [yellow]⚠[/yellow] Could not download captions for video {video_id}: "
+                f"{error_msg}"
             )
 
         return caption_files

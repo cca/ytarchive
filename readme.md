@@ -38,6 +38,8 @@ mise run setup
 5. Configure an OAuth consent screen (internal, add your own email when asked)
 6. Select **Desktop app** as application type
 7. Download JSON and save as `client_secrets.json` in project root
+
+**Note**: Only the `youtube.readonly` scope is needed. Captions are downloaded via yt-dlp (not the API) since the API only allows downloading captions you uploaded yourself.
 8. On first run, browser will open for OAuth consent
 
 ## Usage
@@ -111,15 +113,17 @@ Running `archive --max-results 2` repeatedly will process 2 videos at a time, au
 
 ## Output Structure
 
-```txt
+```
 archive/
 ├── VIDEO_ID/
 │   ├── video.mp4          # Video file
 │   ├── metadata.json      # Full API metadata
 │   ├── captions_en.vtt    # English captions (if available)
-│   ├── captions_*.vtt     # Other language captions
+│   ├── captions_XX.vtt    # Original language captions (if different from English)
 │   └── thumbnail.jpg      # Video thumbnail
 ```
+
+**Note:** Only original language and English captions are downloaded to reduce noise.
 
 ## Development
 
