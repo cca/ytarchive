@@ -3,12 +3,12 @@
 
 [env]
 CHANNEL = "UC3clbBht0DU9hCSKvoP-Z_Q"
-# Configure yt-dlp to use Node.js for JavaScript runtime
-_.path = ["./node_modules/.bin", "$PATH"]
 
 [tools]
 python = "3.12"
-node = "22"  # yt-dlp can use Node.js as JavaScript runtime
+# Note: The tool auto-detects Node.js or Deno for JS runtime
+# If you get JS runtime warnings, install Deno:
+# curl -fsSL https://deno.land/install.sh | sh
 
 [tasks.setup]
 description = "Setup project dependencies"
@@ -16,6 +16,8 @@ run = [
   "uv sync --extra dev",
   "echo 'Checking for ffmpeg...'",
   "command -v ffmpeg || echo 'WARNING: ffmpeg not found. Install with: brew install ffmpeg'",
+  "echo 'Checking for Deno (recommended for yt-dlp)...'",
+  "command -v deno || echo 'OPTIONAL: Install Deno for better yt-dlp compatibility: curl -fsSL https://deno.land/install.sh | sh'",
 ]
 
 [tasks.test]
@@ -29,4 +31,3 @@ run = "uv run ruff check ."
 [tasks.format]
 description = "Format code"
 run = "uv run ruff format ."
-

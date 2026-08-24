@@ -136,11 +136,20 @@ sudo apt-get install ffmpeg  # Linux
 
 **"No supported JavaScript runtime" warning:**
 
-The tool uses YouTube's Android API to minimize JS requirements. If you still see this warning:
-- Install Deno: `curl -fsSL https://deno.land/install.sh | sh`
-- Or use mise: `mise install` (provides Node.js 20 automatically)
+**Solution:** The tool is configured to use Node.js if available, falling back to Deno.
 
-**More help:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for comprehensive solutions.
+If you have Node.js installed and still see this warning:
+```bash
+# Install Deno as fallback
+curl -fsSL https://deno.land/install.sh | sh
+
+# Add to PATH (add to ~/.bashrc or ~/.zshrc)
+export PATH="$HOME/.deno/bin:$PATH"
+```
+
+**Note:** The tool uses YouTube's Android API to minimize JS runtime needs. Most videos won't require a JS runtime at all.
+
+**More help:** See [troubleshooting.md](troubleshooting.md) for comprehensive solutions.
 
 ## License
 

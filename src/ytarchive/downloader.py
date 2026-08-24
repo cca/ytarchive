@@ -84,8 +84,10 @@ class VideoDownloader:
             "quiet": True,
             "no_warnings": True,
             "progress_hooks": [self._progress_hook],
-            # Use Node.js for JavaScript runtime if available
+            # Use Android and web clients to reduce JS runtime requirements
             "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+            # Explicitly use Node.js for JS runtime (falls back to Deno if not found)
+            "js_runtimes": ["node", "deno"],
         }
 
         try:
@@ -102,7 +104,9 @@ class VideoDownloader:
                 console.print("  [green]✓[/green] Downloaded video")
                 return video_file
         except Exception as e:
-            console.print(f"  [red]✗[/red] Failed to download video: {e}")
+            # Show video ID in error for clarity
+            error_msg = str(e)
+            console.print(f"  [red]✗[/red] Failed to download video {video_id}: {error_msg}")
 
         return None
 
@@ -113,6 +117,7 @@ class VideoDownloader:
             "writethumbnail": True,
             "outtmpl": str(output_dir / "thumbnail"),
             "quiet": True,
+            "js_runtimes": ["node", "deno"],
         }
 
         try:
@@ -139,6 +144,8 @@ class VideoDownloader:
             "subtitlesformat": "vtt",
             "outtmpl": str(output_dir / "captions"),
             "quiet": True,
+            "ignoreerrors": True,  # Continue on errors
+            "js_runtimes": ["node", "deno"],
         }
 
         caption_files = {}
@@ -155,8 +162,14 @@ class VideoDownloader:
 
             if caption_files:
                 console.print(f"  [green]✓[/green] Downloaded {len(caption_files)} caption(s)")
+            else:
+                console.print("  [yellow]⚠[/yellow] No captions available")
         except Exception as e:
-            console.print(f"  [yellow]⚠[/yellow] Could not download captions: {e}")
+            # Show video ID in error for clarity
+            error_msg = str(e)
+            console.print(
+                f"  [yellow]⚠[/yellow] Could not download captions for video {video_id}: {error_msg}"
+            )
 
         return caption_files
 
