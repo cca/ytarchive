@@ -56,3 +56,5 @@ archive/
 *.json
 !pyproject.toml
 !tests/**/*.json
+
+troubleshooting.md

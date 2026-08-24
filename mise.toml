@@ -1,4 +1,32 @@
+# mise configuration for ytarchive
+# https://mise.jdx.dev/
+
 [env]
 CHANNEL = "UC3clbBht0DU9hCSKvoP-Z_Q"
+# Configure yt-dlp to use Node.js for JavaScript runtime
+_.path = ["./node_modules/.bin", "$PATH"]
+
 [tools]
 python = "3.12"
+node = "22"  # yt-dlp can use Node.js as JavaScript runtime
+
+[tasks.setup]
+description = "Setup project dependencies"
+run = [
+  "uv sync --extra dev",
+  "echo 'Checking for ffmpeg...'",
+  "command -v ffmpeg || echo 'WARNING: ffmpeg not found. Install with: brew install ffmpeg'",
+]
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Run linting"
+run = "uv run ruff check ."
+
+[tasks.format]
+description = "Format code"
+run = "uv run ruff format ."
+

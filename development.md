@@ -3,6 +3,9 @@
 ## Setup
 ```bash
 uv sync --extra dev
+
+# Check for ffmpeg
+command -v ffmpeg || echo "Install ffmpeg: brew install ffmpeg"
 ```
 
 ## Testing

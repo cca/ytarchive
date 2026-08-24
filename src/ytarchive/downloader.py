@@ -70,12 +70,13 @@ class VideoDownloader:
         output_template = str(output_dir / "video.%(ext)s")
 
         # Quality format selection
+        # Use single format when possible to avoid requiring ffmpeg for merging
         format_selector = {
-            "best": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "1080p": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]",
-            "720p": "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]",
-            "480p": "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]",
-        }.get(self.quality, "best")
+            "best": "best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best",
+            "1080p": "best[height<=1080][ext=mp4]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]",
+            "720p": "best[height<=720][ext=mp4]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]",
+            "480p": "best[height<=480][ext=mp4]/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]",
+        }.get(self.quality, "best[ext=mp4]/best")
 
         ydl_opts = {
             "format": format_selector,
@@ -83,6 +84,8 @@ class VideoDownloader:
             "quiet": True,
             "no_warnings": True,
             "progress_hooks": [self._progress_hook],
+            # Use Node.js for JavaScript runtime if available
+            "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
         }
 
         try:

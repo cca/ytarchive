@@ -7,9 +7,27 @@ YouTube video archival tool.
 ### Prerequisites
 
 - Python 3.11+
-- [uv](https://github.com/astral-sh/uv)
+- **ffmpeg** (required): `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux)
+- [uv](https://github.com/astral-sh/uv) package manager
 - YouTube Data API v3 credentials
-- `uv sync`
+
+### Installation
+
+```bash
+# Install ffmpeg first
+brew install ffmpeg  # macOS
+# OR
+sudo apt-get install ffmpeg  # Linux
+
+# Install Python dependencies
+uv sync
+```
+
+**Optional**: Use [mise](https://mise.jdx.dev/) for automatic environment setup:
+```bash
+mise install
+mise run setup
+```
 
 ### YouTube API Credentials
 
@@ -96,8 +114,34 @@ archive/
 ```bash
 # Run tests
 uv run pytest
+
 # Lint
 uv run ruff check .
+
 # Format
 uv run ruff format .
 ```
+
+## Troubleshooting
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions to common issues.
+
+### Quick Fixes
+
+**"ffmpeg is not installed" error:**
+```bash
+brew install ffmpeg  # macOS
+sudo apt-get install ffmpeg  # Linux
+```
+
+**"No supported JavaScript runtime" warning:**
+
+The tool uses YouTube's Android API to minimize JS requirements. If you still see this warning:
+- Install Deno: `curl -fsSL https://deno.land/install.sh | sh`
+- Or use mise: `mise install` (provides Node.js 20 automatically)
+
+**More help:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for comprehensive solutions.
+
+## License
+
+MIT
