@@ -113,7 +113,7 @@ Running `archive --max-results 2` repeatedly will process 2 videos at a time, au
 
 ## Output Structure
 
-```
+```txt
 archive/
 ├── VIDEO_ID/
 │   ├── video.mp4          # Video file
@@ -137,10 +137,6 @@ uv run ruff check .
 # Format
 uv run ruff format .
 ```
-
-## Troubleshooting
-
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions to common issues.
 
 ### Quick Fixes
 
