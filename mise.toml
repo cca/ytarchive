@@ -1,0 +1,4 @@
+[env]
+CHANNEL = "UC3clbBht0DU9hCSKvoP-Z_Q"
+[tools]
+python = "3.12"
