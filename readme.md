@@ -78,12 +78,19 @@ ytarchive list --channel-id CCAarts --output my-videos.json
 ```bash
 # Archive from default list location (archive/videos.json, skips existing by default)
 ytarchive archive
+
+# Run again to archive the NEXT batch (picks up where it left off)
+ytarchive archive --max-results 2  # Downloads next 2 un-archived videos
+
 # Archive from channel directly
 ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
+
 # Archive and overwrite existing files
 ytarchive archive --overwrite
+
 # Archive specific video IDs
 ytarchive archive --video-ids dQw4w9WgXcQ,jNQXAC9IVRw
+
 # Custom output directory
 ytarchive archive --output-dir ./my-archive
 ```
@@ -91,11 +98,16 @@ ytarchive archive --output-dir ./my-archive
 ### Options
 
 - `--max-results N`: Limit number of videos to process (default: all)
+  - For `list`: Gets first N videos from channel
+  - For `archive`: Archives first N **un-archived** videos (progressive batching)
 - `--overwrite`: Overwrite existing videos (default: skip existing)
 - `--quality`: Video quality (best/1080p/720p/480p, default: best)
 - `--output`: For list command (default: archive/videos.json)
 - `--output-dir`: For archive command (default: archive)
 - `--input-file`: For archive command (default: archive/videos.json)
+
+**Progressive Archival:**
+Running `archive --max-results 2` repeatedly will process 2 videos at a time, automatically skipping already-archived ones. This makes it easy to archive large channels incrementally.
 
 ## Output Structure
 

@@ -1,5 +1,6 @@
 """Video download and archival functionality."""
 
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -35,6 +36,11 @@ class VideoDownloader:
         # Check if already archived
         if self.skip_existing and (video_dir / "video.mp4").exists():
             console.print(f"[yellow]↷[/yellow] Skipping {video.snippet.title} (already exists)")
+            manifest.video_file = str(video_dir / "video.mp4")
+            # Load existing manifest if available
+            existing_manifest = video_dir / "manifest.json"
+            if existing_manifest.exists():
+                return ArchiveManifest(**json.loads(existing_manifest.read_text()))
             return manifest
 
         console.print(f"\n[cyan]Archiving:[/cyan] {video.snippet.title}")

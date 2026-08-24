@@ -178,7 +178,26 @@ def archive(
         console.print("[yellow]No videos to archive[/yellow]")
         return
 
-    if max_results:
+    # Filter out already-archived videos (unless overwrite is set)
+    if not overwrite:
+        original_count = len(videos)
+        videos = [v for v in videos if not (output_dir / v.id / "video.mp4").exists()]
+        skipped_count = original_count - len(videos)
+
+        if skipped_count > 0:
+            console.print(
+                f"[cyan]Skipped {skipped_count} already-archived video(s), "
+                f"{len(videos)} remaining[/cyan]"
+            )
+
+        if not videos:
+            console.print(
+                "[green]All videos already archived! Use --overwrite to re-download.[/green]"
+            )
+            return
+
+    # Apply max-results to the filtered list
+    if max_results and len(videos) > max_results:
         videos = videos[:max_results]
 
     mode_str = "overwrite mode" if overwrite else "skip existing mode"
