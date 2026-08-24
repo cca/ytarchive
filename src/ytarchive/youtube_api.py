@@ -180,3 +180,26 @@ class YouTubeClient:
         except Exception as e:
             console.print(f"[yellow]Warning: Could not fetch captions for {video_id}: {e}[/yellow]")
             return []
+
+    def download_caption(self, caption_id: str, output_path: str) -> bool:
+        """Download a specific caption track to file.
+
+        Args:
+            caption_id: The caption track ID from get_captions()
+            output_path: Where to save the caption file
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Download caption in VTT format
+            subtitle = self.service.captions().download(id=caption_id, tfmt="vtt").execute()
+
+            # Write to file
+            with open(output_path, "wb") as f:
+                f.write(subtitle)
+
+            return True
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not download caption {caption_id}: {e}[/yellow]")
+            return False

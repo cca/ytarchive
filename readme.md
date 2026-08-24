@@ -161,6 +161,10 @@ export PATH="$HOME/.deno/bin:$PATH"
 
 **Note:** The tool uses YouTube's Android API to minimize JS runtime needs. Most videos won't require a JS runtime at all.
 
+**Caption download errors (429 Too Many Requests):**
+
+The tool now uses the YouTube Data API to download captions instead of yt-dlp scraping, which should avoid most rate limiting issues. Captions are downloaded using your authenticated API credentials.
+
 **More help:** See [troubleshooting.md](troubleshooting.md) for comprehensive solutions.
 
 ## License

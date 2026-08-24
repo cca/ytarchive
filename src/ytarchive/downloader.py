@@ -15,10 +15,17 @@ console = Console()
 class VideoDownloader:
     """Download videos, metadata, and captions."""
 
-    def __init__(self, output_dir: str, quality: str = "best", skip_existing: bool = False):
+    def __init__(
+        self,
+        output_dir: str,
+        quality: str = "best",
+        skip_existing: bool = False,
+        youtube_client=None,
+    ):
         self.output_dir = Path(output_dir)
         self.quality = quality
         self.skip_existing = skip_existing
+        self.youtube_client = youtube_client
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def archive_video(self, video: Video) -> ArchiveManifest:
@@ -93,7 +100,7 @@ class VideoDownloader:
             # Use Android and web clients to reduce JS runtime requirements
             "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
             # Explicitly use Node.js for JS runtime (falls back to Deno if not found)
-            "js_runtimes": ["node", "deno"],
+            "js_runtimes": {"node": {}, "deno": {}},
         }
 
         try:
@@ -123,7 +130,7 @@ class VideoDownloader:
             "writethumbnail": True,
             "outtmpl": str(output_dir / "thumbnail"),
             "quiet": True,
-            "js_runtimes": ["node", "deno"],
+            "js_runtimes": {"node": {}, "deno": {}},
         }
 
         try:
@@ -151,7 +158,7 @@ class VideoDownloader:
             "outtmpl": str(output_dir / "captions"),
             "quiet": True,
             "ignoreerrors": True,  # Continue on errors
-            "js_runtimes": ["node", "deno"],
+            "js_runtimes": {"node": {}, "deno": {}},
         }
 
         caption_files = {}

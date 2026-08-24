@@ -145,7 +145,7 @@ def archive(
     client = YouTubeClient(str(client_secrets))
     # Invert overwrite flag: skip_existing is the opposite
     skip_existing = not overwrite
-    downloader = VideoDownloader(str(output_dir), quality, skip_existing)
+    downloader = VideoDownloader(str(output_dir), quality, skip_existing, youtube_client=client)
 
     videos = []
 
