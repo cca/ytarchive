@@ -165,8 +165,6 @@ export PATH="$HOME/.deno/bin:$PATH"
 
 The tool now uses the YouTube Data API to download captions instead of yt-dlp scraping, which should avoid most rate limiting issues. Captions are downloaded using your authenticated API credentials.
 
-**More help:** See [troubleshooting.md](troubleshooting.md) for comprehensive solutions.
-
 ## License
 
 MIT
