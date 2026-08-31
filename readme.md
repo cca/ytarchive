@@ -111,6 +111,34 @@ ytarchive archive --output-dir ./my-archive
 **Progressive Archival:**
 Running `archive --max-results 2` repeatedly will process 2 videos at a time, automatically skipping already-archived ones. This makes it easy to archive large channels incrementally.
 
+## S3 Upload
+
+Videos can be uploaded to S3 and optionally deleted locally after upload. Configure S3 via environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=your_key
+export AWS_SECRET_ACCESS_KEY=your_secret
+export S3_BUCKET=your-bucket
+export S3_PREFIX=youtube  # optional: S3 key prefix
+```
+
+Example command:
+
+```bash
+ytarchive archive \
+  --max-results 2 \
+  --upload-to-s3 \
+  --delete-after-upload
+```
+
+**S3 Options:**
+- `--upload-to-s3`: Upload to S3 after downloading each video
+- `--s3-bucket NAME`: S3 bucket (or use `S3_BUCKET` env var)
+- `--s3-prefix PREFIX`: S3 key prefix (or use `S3_PREFIX` env var, default: empty)
+- `--delete-after-upload`: Delete local files after successful S3 upload
+
+Defaults to `GLACIER_IR` storage class. Videos already in S3 are automatically skipped.
+
 ## Output Structure
 
 ```txt

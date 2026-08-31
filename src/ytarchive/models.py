@@ -71,3 +71,9 @@ class ArchiveManifest(BaseModel):
     metadata_file: str
     thumbnail_file: str | None = None
     caption_files: dict[str, str] = Field(default_factory=dict)  # lang -> file path
+    # S3 upload tracking
+    s3_uploaded: bool = False
+    s3_bucket: str | None = None
+    s3_prefix: str | None = None
+    s3_uploaded_at: datetime | None = None
+    s3_files: dict[str, dict] = Field(default_factory=dict)  # filename -> {key, etag, size, md5}

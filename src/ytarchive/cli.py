@@ -1,6 +1,7 @@
 """Command-line interface for ytarchive."""
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
@@ -9,6 +10,7 @@ from rich.table import Table
 
 from ytarchive.downloader import VideoDownloader
 from ytarchive.models import Video
+from ytarchive.s3_uploader import S3Uploader
 from ytarchive.youtube_api import YouTubeClient
 
 console = Console()
@@ -140,12 +142,33 @@ def archive(
     overwrite: bool,
     quality: str,
     client_secrets: Path,
+    upload_to_s3: bool,
+    s3_bucket: str | None,
+    s3_prefix: str,
+    delete_after_upload: bool,
 ):
-    """Archive YouTube videos with metadata and captions."""
+    """Archive YouTube videos with metadata and captions.
+    
+    Optionally upload to S3 and delete local files to save space.
+    
+    Example for limited disk space:
+    
+        ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q \\
+            --max-results 2 --upload-to-s3 --delete-after-upload
+    """
     client = YouTubeClient(str(client_secrets))
     # Invert overwrite flag: skip_existing is the opposite
     skip_existing = not overwrite
     downloader = VideoDownloader(str(output_dir), quality, skip_existing, youtube_client=client)
+
+    # Initialize S3 uploader if requested
+    s3_uploader = None
+    if upload_to_s3:
+        try:
+            s3_uploader = S3Uploader(bucket=s3_bucket, prefix=s3_prefix)
+        except Exception as e:
+            console.print(f"[red]Error initializing S3 uploader: {e}[/red]")
+            raise click.Abort()
 
     videos = []
 
@@ -181,7 +204,16 @@ def archive(
     # Filter out already-archived videos (unless overwrite is set)
     if not overwrite:
         original_count = len(videos)
-        videos = [v for v in videos if not (output_dir / v.id / "video.mp4").exists()]
+        # Check both local and S3 (if S3 uploader is configured)
+        videos_to_archive = []
+        for v in videos:
+            local_exists = (output_dir / v.id / "video.mp4").exists()
+            s3_exists = s3_uploader.check_exists(v.id) if s3_uploader else False
+
+            if not local_exists and not s3_exists:
+                videos_to_archive.append(v)
+
+        videos = videos_to_archive
         skipped_count = original_count - len(videos)
 
         if skipped_count > 0:
@@ -211,6 +243,35 @@ def archive(
         console.print(f"[bold]Video {i}/{len(videos)}[/bold]")
         try:
             manifest = downloader.archive_video(video)
+
+            # Upload to S3 if requested
+            if s3_uploader:
+                video_dir = output_dir / video.id
+                try:
+                    uploaded_files = s3_uploader.upload_directory(video_dir, video.id)
+
+                    # Update manifest with S3 metadata
+                    from datetime import datetime, timezone
+
+                    manifest.s3_uploaded = True
+                    manifest.s3_bucket = s3_uploader.bucket
+                    manifest.s3_prefix = s3_uploader.prefix
+                    manifest.s3_uploaded_at = datetime.now(timezone.utc)
+                    manifest.s3_files = uploaded_files
+
+                    # Save updated manifest
+                    manifest_path = video_dir / "manifest.json"
+                    manifest_path.write_text(manifest.model_dump_json(indent=2))
+
+                    # Delete local files if requested
+                    if delete_after_upload:
+                        s3_uploader.cleanup_local(video_dir)
+
+                except Exception as e:
+                    console.print(f"[red]✗ S3 upload failed: {e}[/red]")
+                    console.print("[yellow]⚠ Local files retained[/yellow]\n")
+                    # Continue with next video despite S3 failure
+
             manifests.append(manifest)
         except Exception as e:
             console.print(f"[red]✗ Error archiving {video.snippet.title}: {e}[/red]\n")
