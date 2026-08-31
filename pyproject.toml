@@ -5,24 +5,17 @@ description = "YouTube video archival tool for permanent preservation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "click==8.4.2",
+    "click==8.5.0",
     "rich==15.0.0",
     "google-api-python-client==2.199.0",
     "google-auth-oauthlib==1.4.1",
     "google-auth-httplib2==0.4.2",
-    "pydantic==2.13.4",
+    "pydantic==2.13.5",
     "yt-dlp==2026.8.19",
 ]
 
 [project.scripts]
 ytarchive = "ytarchive.cli:cli"
-
-[project.optional-dependencies]
-dev = [
-    "pytest==9.1.1",
-    "pytest-cov==7.1.0",
-    "ruff==0.16.4",
-]
 
 [build-system]
 requires = ["hatchling"]
@@ -63,5 +56,5 @@ addopts = "-v --cov=ytarchive --cov-report=term-missing"
 dev = [
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
-    "ruff==0.16.4",
+    "ruff==0.16.5",
 ]
