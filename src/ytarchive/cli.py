@@ -1,7 +1,7 @@
 """Command-line interface for ytarchive."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -14,16 +14,17 @@ from ytarchive.s3_uploader import S3Uploader
 from ytarchive.youtube_api import YouTubeClient
 
 console = Console()
+CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 
-@click.group()
+@click.group(context_settings=CONTEXT_SETTINGS)
 @click.version_option()
 def cli():
     """YouTube video archival tool."""
     pass
 
 
-@cli.command()
+@cli.command(context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--channel-id",
     required=True,
@@ -90,7 +91,7 @@ def list(channel_id: str, max_results: int | None, output: Path, client_secrets:
     console.print(f"\n[green]✓[/green] Saved video list to {output}")
 
 
-@cli.command()
+@cli.command(context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--channel-id",
     help="YouTube channel ID, username, or @handle",
@@ -133,6 +134,27 @@ def list(channel_id: str, max_results: int | None, output: Path, client_secrets:
     default="client_secrets.json",
     help="Path to OAuth client secrets file (default: client_secrets.json)",
 )
+@click.option(
+    "--upload-to-s3",
+    is_flag=True,
+    help="Upload each archived video to S3",
+)
+@click.option(
+    "--s3-bucket",
+    envvar="S3_BUCKET",
+    help="S3 bucket name (or set S3_BUCKET)",
+)
+@click.option(
+    "--s3-prefix",
+    envvar="S3_PREFIX",
+    default="",
+    help="S3 key prefix (or set S3_PREFIX)",
+)
+@click.option(
+    "--delete-after-upload",
+    is_flag=True,
+    help="Delete local files after a successful S3 upload",
+)
 def archive(
     channel_id: str | None,
     video_ids: str | None,
@@ -148,13 +170,12 @@ def archive(
     delete_after_upload: bool,
 ):
     """Archive YouTube videos with metadata and captions.
-    
+
     Optionally upload to S3 and delete local files to save space.
-    
-    Example for limited disk space:
-    
-        ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q \\
-            --max-results 2 --upload-to-s3 --delete-after-upload
+
+    Example:
+
+        ytarchive archive --max-results 2 --upload-to-s3 --delete-after-upload
     """
     client = YouTubeClient(str(client_secrets))
     # Invert overwrite flag: skip_existing is the opposite
@@ -168,7 +189,7 @@ def archive(
             s3_uploader = S3Uploader(bucket=s3_bucket, prefix=s3_prefix)
         except Exception as e:
             console.print(f"[red]Error initializing S3 uploader: {e}[/red]")
-            raise click.Abort()
+            raise click.Abort() from e
 
     videos = []
 
@@ -251,12 +272,10 @@ def archive(
                     uploaded_files = s3_uploader.upload_directory(video_dir, video.id)
 
                     # Update manifest with S3 metadata
-                    from datetime import datetime, timezone
-
                     manifest.s3_uploaded = True
                     manifest.s3_bucket = s3_uploader.bucket
                     manifest.s3_prefix = s3_uploader.prefix
-                    manifest.s3_uploaded_at = datetime.now(timezone.utc)
+                    manifest.s3_uploaded_at = datetime.now(UTC)
                     manifest.s3_files = uploaded_files
 
                     # Save updated manifest
@@ -288,7 +307,7 @@ def archive(
     console.print(f"[green]Archive index saved to {index_path}[/green]")
 
 
-@cli.command()
+@cli.command(context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--channel-id",
     help="YouTube channel ID to check (uses JSON filename)",
@@ -308,9 +327,6 @@ def status(channel_id: str | None, input_file: Path | None, output_dir: Path):
     """Show archival progress for a channel.
 
     Displays total videos, downloaded, and uploaded to S3.
-
-    Example:
-        ytarchive status --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
     """
     # Determine input file
     if input_file is None:
@@ -361,7 +377,7 @@ def status(channel_id: str | None, input_file: Path | None, output_dir: Path):
     uploaded_pct = (uploaded_s3 / total * 100) if total > 0 else 0
 
     # Display results
-    console.print(f"\n[bold]Archive Status:[/bold]")
+    console.print("\n[bold]Archive Status:[/bold]")
     console.print(f"  Total videos:     {total}")
     console.print(f"  Downloaded:       {downloaded} ({downloaded_pct:.1f}%)")
     console.print(f"  Uploaded to S3:   {uploaded_s3} ({uploaded_pct:.1f}%)")
@@ -371,7 +387,7 @@ def status(channel_id: str | None, input_file: Path | None, output_dir: Path):
     if remaining > 0:
         console.print(f"  [cyan]Remaining:[/cyan]        {remaining}")
     else:
-        console.print(f"\n[bold green]✓ All videos archived![/bold green]")
+        console.print("\n[bold green]✓ All videos archived![/bold green]")
 
 
 if __name__ == "__main__":
