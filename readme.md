@@ -47,10 +47,13 @@ mise run setup
 ### Quick Start Workflow
 
 ```bash
-# 1. List all videos from CCA channel (saves to archive/videos.json)
+# 1. List all videos from CCA channel (saves the catalog to archive/videos.json)
 uv run ytarchive list --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
-# 2. Download videos ten at a time (reads archive/videos.json, saves to archive/)
+# 2. Download videos ten at a time (updates archive/{channel-id}.json)
 uv run ytarchive archive --max-results 10
+
+# 3. Show progress from the channel archive index
+uv run ytarchive status --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
 ```
 
 ### Finding a Channel
@@ -78,7 +81,7 @@ ytarchive list --channel-id CCAarts --output my-videos.json
 ### Archive videos
 
 ```bash
-# Archive from default list location (archive/{channel-id}.json, skips existing by default)
+# Archive from the default catalog (archive/videos.json, skips existing by default)
 ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
 
 # Run again to archive the NEXT batch (picks up where it left off)
@@ -109,7 +112,15 @@ ytarchive archive --output-dir ./my-archive
 - `--input-file`: For archive command (default: archive/videos.json)
 
 **Progressive Archival:**
-Running `archive --max-results 2` repeatedly will process 2 videos at a time, automatically skipping already-archived ones. This makes it easy to archive large channels incrementally.
+Running `archive --max-results 2` repeatedly processes two unarchived videos at a time. Each batch is merged into the cumulative `archive/{channel-id}.json` archive index.
+
+### Check archive status
+
+```bash
+ytarchive status --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
+```
+
+Status reads `archive/{channel-id}.json` for archived and S3-uploaded counts, and `archive/videos.json` for the channel total.
 
 ## S3 Upload
 
@@ -143,6 +154,8 @@ Defaults to `GLACIER_IR` storage class. Videos already in S3 are automatically s
 
 ```txt
 archive/
+├── UC3clbBht0DU9hCSKvoP-Z_Q.json  # Cumulative archive index
+├── videos.json                     # YouTube video catalog
 ├── VIDEO_ID/
 │   ├── video.mp4          # Video file
 │   ├── metadata.json      # Full API metadata

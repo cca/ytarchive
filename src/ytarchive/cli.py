@@ -298,9 +298,25 @@ def archive(
             console.print(f"[red]✗ Error archiving {video.snippet.title}: {e}[/red]\n")
             continue
 
-    # Save archive index
-    index_path = output_dir / "archive_index.json"
-    index_data = [m.model_dump(mode="json") for m in manifests]
+    # Merge this batch into the channel's cumulative archive index.
+    channel_ids = {video.snippet.channel_id for video in videos}
+    if len(channel_ids) != 1:
+        console.print("[red]Error: Cannot create one archive index for multiple channels[/red]")
+        raise click.Abort()
+
+    archive_channel_id = channel_ids.pop()
+    index_path = output_dir / f"{archive_channel_id}.json"
+    indexed_manifests = {}
+    if index_path.exists():
+        index_data = json.loads(index_path.read_text())
+        indexed_manifests = {
+            manifest.video_id: manifest
+            for manifest in (ArchiveManifest.model_validate(item) for item in index_data)
+        }
+    indexed_manifests.update({manifest.video_id: manifest for manifest in manifests})
+    index_data = [
+        manifest.model_dump(mode="json") for manifest in indexed_manifests.values()
+    ]
     index_path.write_text(json.dumps(index_data, indent=2))
 
     console.print(
@@ -318,7 +334,7 @@ def archive(
 @click.option(
     "--input-file",
     type=click.Path(exists=True, path_type=Path),
-    help="Channel JSON file (default: archive/{channel-id}.json)",
+    help="Channel archive index (default: archive/{channel-id}.json)",
 )
 @click.option(
     "--output-dir",
@@ -331,49 +347,36 @@ def status(channel_id: str | None, input_file: Path | None, output_dir: Path):
 
     Displays total videos, downloaded, and uploaded to S3.
     """
-    # Determine input file
+    output_path = Path(output_dir)
+
+    # Determine archive index
     if input_file is None:
         if channel_id is None:
             console.print("[red]Error: Must provide either --channel-id or --input-file[/red]")
             raise click.Abort()
-        input_file = Path("archive") / f"{channel_id}.json"
+        input_file = output_path / f"{channel_id}.json"
 
-    if not input_file.exists():
-        console.print(f"[red]Error: File not found: {input_file}[/red]")
-        hint_id = channel_id or "CHANNEL_ID"
-        console.print(f"[yellow]Hint: Run 'ytarchive list --channel-id {hint_id}' first[/yellow]")
-        raise click.Abort()
+    manifests = []
+    if input_file.exists():
+        console.print(f"[cyan]Reading:[/cyan] {input_file}")
+        index_data = json.loads(input_file.read_text())
+        manifests = [ArchiveManifest.model_validate(item) for item in index_data]
+    else:
+        console.print(f"[yellow]No archive index found at {input_file}[/yellow]")
 
-    # Load videos from JSON
-    console.print(f"[cyan]Reading:[/cyan] {input_file}")
-    video_data = json.loads(input_file.read_text())
-    videos = [Video(**v) for v in video_data]
+    downloaded = len(manifests)
+    uploaded_s3 = sum(manifest.s3_uploaded for manifest in manifests)
+    partial = downloaded - uploaded_s3
 
-    total = len(videos)
-    downloaded = 0
-    uploaded_s3 = 0
-    partial = 0  # Downloaded but not uploaded
-
-    output_path = Path(output_dir)
-
-    # Check status of each video
-    for video in videos:
-        video_dir = output_path / video.id
-        manifest_path = video_dir / "manifest.json"
-
-        if manifest_path.exists():
-            manifest = ArchiveManifest.model_validate_json(manifest_path.read_text())
-
-            if manifest.s3_uploaded:
-                uploaded_s3 += 1
-            else:
-                partial += 1
-
-            downloaded += 1
-        elif (video_dir / "video.mp4").exists():
-            # Has video but no manifest
-            downloaded += 1
-            partial += 1
+    # Use the video catalog for the channel total when available.
+    catalog_path = output_path / "videos.json"
+    total = downloaded
+    if catalog_path.exists():
+        video_data = json.loads(catalog_path.read_text())
+        videos = [Video(**item) for item in video_data]
+        if channel_id:
+            videos = [video for video in videos if video.snippet.channel_id == channel_id]
+        total = max(len(videos), downloaded)
 
     # Calculate percentages
     downloaded_pct = (downloaded / total * 100) if total > 0 else 0

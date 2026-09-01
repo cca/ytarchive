@@ -1,8 +1,12 @@
 """Tests for CLI commands."""
 
+import json
+from datetime import UTC, datetime
+
 from click.testing import CliRunner
 
 from ytarchive.cli import cli
+from ytarchive.models import ArchiveManifest
 
 
 def test_cli_version():
@@ -62,6 +66,29 @@ def test_status_uses_channel_environment_variable():
     runner = CliRunner()
     result = runner.invoke(cli, ["status"], env={"CHANNEL": "UC123"})
 
-    assert result.exit_code != 0
+    assert result.exit_code == 0
     assert "archive/UC123.json" in result.output
     assert "Must provide either --channel-id or --input-file" not in result.output
+
+
+def test_status_reads_channel_archive_index(tmp_path):
+    """Test status summarizes the channel-specific manifest index."""
+    manifest = ArchiveManifest(
+        video_id="video-1",
+        title="Archived video",
+        archived_at=datetime.now(UTC),
+        metadata_file="archive/video-1/metadata.json",
+        s3_uploaded=True,
+    )
+    index_path = tmp_path / "UC123.json"
+    index_path.write_text(json.dumps([manifest.model_dump(mode="json")]))
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["status", "--channel-id", "UC123", "--output-dir", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0
+    assert "Downloaded:       1 (100.0%)" in result.output
+    assert "Uploaded to S3:   1 (100.0%)" in result.output
