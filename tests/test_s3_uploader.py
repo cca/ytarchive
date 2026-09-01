@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -34,38 +34,42 @@ def test_s3_uploader_init_prefix_already_has_slash():
 
 def test_s3_uploader_init_from_env_vars():
     """Test S3Uploader initialization from environment variables."""
-    with patch.dict(
-        os.environ,
-        {
-            "S3_BUCKET": "env-bucket",
-            "S3_PREFIX": "env-prefix",
-            "AWS_ACCESS_KEY_ID": "test-key",
-            "AWS_SECRET_ACCESS_KEY": "test-secret",
-        },
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "S3_BUCKET": "env-bucket",
+                "S3_PREFIX": "env-prefix",
+                "AWS_ACCESS_KEY_ID": "test-key",
+                "AWS_SECRET_ACCESS_KEY": "test-secret",
+            },
+        ),
+        patch("ytarchive.s3_uploader.boto3") as mock_boto3,
     ):
-        with patch("ytarchive.s3_uploader.boto3") as mock_boto3:
-            uploader = S3Uploader()
-            assert uploader.bucket == "env-bucket"
-            assert uploader.prefix == "env-prefix/"
-            # Verify boto3 client was called with credentials
-            mock_boto3.client.assert_called_once_with(
-                "s3",
-                aws_access_key_id="test-key",
-                aws_secret_access_key="test-secret",
-            )
+        uploader = S3Uploader()
+        assert uploader.bucket == "env-bucket"
+        assert uploader.prefix == "env-prefix/"
+        # Verify boto3 client was called with credentials
+        mock_boto3.client.assert_called_once_with(
+            "s3",
+            aws_access_key_id="test-key",
+            aws_secret_access_key="test-secret",
+        )
 
 
 def test_s3_uploader_init_missing_bucket():
     """Test S3Uploader raises error when bucket not provided."""
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError, match="S3 bucket must be provided"):
-            S3Uploader()
+    with (
+        patch.dict(os.environ, {}, clear=True),
+        pytest.raises(ValueError, match="S3 bucket must be provided"),
+    ):
+        S3Uploader()
 
 
 def test_s3_uploader_init_explicit_credentials():
     """Test S3Uploader with explicit credentials."""
     with patch("ytarchive.s3_uploader.boto3") as mock_boto3:
-        uploader = S3Uploader(
+        S3Uploader(
             bucket="test-bucket",
             aws_access_key_id="explicit-key",
             aws_secret_access_key="explicit-secret",

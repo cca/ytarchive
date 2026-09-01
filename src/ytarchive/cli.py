@@ -237,9 +237,7 @@ def archive(
                 index_data = json.loads(existing_index_path.read_text())
                 uploaded_video_ids = {
                     manifest.video_id
-                    for manifest in (
-                        ArchiveManifest.model_validate(item) for item in index_data
-                    )
+                    for manifest in (ArchiveManifest.model_validate(item) for item in index_data)
                     if manifest.s3_uploaded
                 }
 
@@ -275,7 +273,8 @@ def archive(
 
     mode_str = "overwrite mode" if overwrite else "skip existing mode"
     console.print(
-        f"\n[bold cyan]Archiving {len(videos)} video(s) to {output_dir} ({mode_str})[/bold cyan]\n"
+        f"\n[bold cyan]Archiving {len(videos)} video(s) to {output_dir} ({mode_str})[/bold cyan]\n",
+        highlight=False,
     )
 
     # Archive each video
@@ -332,9 +331,7 @@ def archive(
             for manifest in (ArchiveManifest.model_validate(item) for item in index_data)
         }
     indexed_manifests.update({manifest.video_id: manifest for manifest in manifests})
-    index_data = [
-        manifest.model_dump(mode="json") for manifest in indexed_manifests.values()
-    ]
+    index_data = [manifest.model_dump(mode="json") for manifest in indexed_manifests.values()]
     index_path.write_text(json.dumps(index_data, indent=2))
 
     console.print(

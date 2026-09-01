@@ -1,10 +1,7 @@
 """Tests for video downloader."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock
-
-import pytest
 
 from ytarchive.downloader import VideoDownloader
 from ytarchive.models import ArchiveManifest, Video, VideoSnippet
@@ -25,7 +22,7 @@ def test_downloader_init():
 def test_downloader_creates_output_dir(tmp_path):
     """Test VideoDownloader creates output directory if it doesn't exist."""
     output_dir = tmp_path / "new-archive"
-    downloader = VideoDownloader(str(output_dir))
+    VideoDownloader(str(output_dir))
 
     # Directory should be created
     assert output_dir.exists()
@@ -43,7 +40,7 @@ def test_skip_existing_returns_early(tmp_path):
     existing_manifest = ArchiveManifest(
         video_id=video_id,
         title="Existing Video",
-        archived_at=datetime.now(timezone.utc),
+        archived_at=datetime.now(UTC),
         metadata_file=str(video_dir / "metadata.json"),
     )
     manifest_path = video_dir / "manifest.json"
@@ -59,7 +56,7 @@ def test_skip_existing_returns_early(tmp_path):
     mock_video = Video(
         id=video_id,
         snippet=VideoSnippet(
-            publishedAt=datetime.now(timezone.utc).isoformat(),
+            publishedAt=datetime.now(UTC),
             channelId="UC123",
             title="Existing Video",
             description="Test",
@@ -86,7 +83,7 @@ def test_manifest_creation(tmp_path):
     manifest = ArchiveManifest(
         video_id=video_id,
         title=title,
-        archived_at=datetime.now(timezone.utc),
+        archived_at=datetime.now(UTC),
         metadata_file=str(video_dir / "metadata.json"),
         video_file=str(video_dir / "video.mp4"),
         thumbnail_file=str(video_dir / "thumbnail.jpg"),

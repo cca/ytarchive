@@ -31,15 +31,15 @@ class S3Uploader:
             aws_access_key_id: AWS access key (defaults to AWS_ACCESS_KEY_ID env var)
             aws_secret_access_key: AWS secret key (defaults to AWS_SECRET_ACCESS_KEY env var)
         """
-        self.bucket = bucket or os.getenv("S3_BUCKET")
+        self.bucket: str | None = bucket or os.getenv("S3_BUCKET")
         if not self.bucket:
             raise ValueError("S3 bucket must be provided or set via S3_BUCKET environment variable")
 
-        self.prefix = prefix or os.getenv("S3_PREFIX", "")
+        self.prefix: str = prefix or os.getenv("S3_PREFIX", "")
         if self.prefix and not self.prefix.endswith("/"):
             self.prefix += "/"
 
-        self.storage_class = storage_class
+        self.storage_class: str = storage_class
 
         # Initialize boto3 client with explicit credentials or default credential chain
         session_kwargs = {}
@@ -138,7 +138,7 @@ class S3Uploader:
         if not video_dir.exists():
             raise FileNotFoundError(f"Directory not found: {video_dir}")
 
-        console.print(f"\n[cyan]Uploading to S3:[/cyan] {video_id}")
+        console.print(f"\n[cyan]Uploading to S3:[/cyan] {video_id}", highlight=False)
 
         uploaded_files = {}
         s3_key_prefix = f"{video_id}/"
@@ -213,4 +213,4 @@ class S3Uploader:
 
         # Delete directory
         video_dir.rmdir()
-        console.print(f"  [green]✓[/green] Cleaned up local files")
+        console.print("  [green]✓[/green] Cleaned up local files")

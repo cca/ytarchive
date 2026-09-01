@@ -24,8 +24,8 @@ def test_video_snippet():
 def test_video_statistics():
     """Test VideoStatistics model."""
     data = {
-        "viewCount": "1000",
-        "likeCount": "50",
+        "viewCount": 1000,
+        "likeCount": 50,
     }
     stats = VideoStatistics(**data)
     assert stats.view_count == 1000
@@ -52,6 +52,7 @@ def test_video_model():
     video = Video(**data)
     assert video.id == "test123"
     assert video.snippet.title == "Test Video"
+    assert video.statistics is not None
     assert video.statistics.view_count == 1000
 
 
