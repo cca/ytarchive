@@ -202,7 +202,9 @@ def archive(
         if not resolved_id:
             console.print(f"[red]Error: Could not resolve '{channel_id}' to a channel ID[/red]")
             raise click.Abort()
-        videos = client.get_channel_videos(resolved_id, max_results)
+        # Fetch the complete sequence so max-results can be applied after
+        # already-archived videos are removed.
+        videos = client.get_channel_videos(resolved_id)
     elif video_ids:
         video_id_list = [vid.strip() for vid in video_ids.split(",")]
         for vid_id in video_id_list:
@@ -227,11 +229,27 @@ def archive(
     # Filter out already-archived videos (unless overwrite is set)
     if not overwrite:
         original_count = len(videos)
+        channel_ids = {video.snippet.channel_id for video in videos}
+        uploaded_video_ids = set()
+        if len(channel_ids) == 1:
+            existing_index_path = output_dir / f"{next(iter(channel_ids))}.json"
+            if existing_index_path.exists():
+                index_data = json.loads(existing_index_path.read_text())
+                uploaded_video_ids = {
+                    manifest.video_id
+                    for manifest in (
+                        ArchiveManifest.model_validate(item) for item in index_data
+                    )
+                    if manifest.s3_uploaded
+                }
+
         # Check both local and S3 (if S3 uploader is configured)
         videos_to_archive = []
         for v in videos:
             local_exists = (output_dir / v.id / "video.mp4").exists()
-            s3_exists = s3_uploader.check_exists(v.id) if s3_uploader else False
+            s3_exists = v.id in uploaded_video_ids
+            if not s3_exists and s3_uploader:
+                s3_exists = s3_uploader.check_exists(v.id)
 
             if not local_exists and not s3_exists:
                 videos_to_archive.append(v)
