@@ -78,14 +78,14 @@ ytarchive list --channel-id CCAarts --output my-videos.json
 ### Archive videos
 
 ```bash
-# Archive from default list location (archive/videos.json, skips existing by default)
-ytarchive archive
+# Archive from default list location (archive/{channel-id}.json, skips existing by default)
+ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
 
 # Run again to archive the NEXT batch (picks up where it left off)
-ytarchive archive --max-results 2  # Downloads next 2 un-archived videos
+ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q --max-results 2
 
-# Archive from channel directly
-ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
+# Archive from channel directly (without pre-listing)
+ytarchive archive --channel-id UC3clbBht0DU9hCSKvoP-Z_Q --max-results 10
 
 # Archive and overwrite existing files
 ytarchive archive --overwrite

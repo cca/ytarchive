@@ -34,3 +34,12 @@ def test_archive_help():
     result = runner.invoke(cli, ["archive", "--help"])
     assert result.exit_code == 0
     assert "output-dir" in result.output
+
+
+def test_status_help():
+    """Test status command help."""
+    runner = CliRunner()
+    result = runner.invoke(cli, ["status", "--help"])
+    assert result.exit_code == 0
+    assert "channel-id" in result.output
+    assert "progress" in result.output.lower()

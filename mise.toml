@@ -2,6 +2,7 @@
 # https://mise.jdx.dev/
 
 [env]
+# @CCAarts main channel
 CHANNEL = "UC3clbBht0DU9hCSKvoP-Z_Q"
 
 [tools]

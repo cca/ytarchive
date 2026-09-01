@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 from ytarchive.downloader import VideoDownloader
-from ytarchive.models import Video
+from ytarchive.models import ArchiveManifest, Video
 from ytarchive.s3_uploader import S3Uploader
 from ytarchive.youtube_api import YouTubeClient
 
@@ -286,6 +286,92 @@ def archive(
         f"\n[bold green]✓ Successfully archived {len(manifests)}/{len(videos)} videos[/bold green]"
     )
     console.print(f"[green]Archive index saved to {index_path}[/green]")
+
+
+@cli.command()
+@click.option(
+    "--channel-id",
+    help="YouTube channel ID to check (uses JSON filename)",
+)
+@click.option(
+    "--input-file",
+    type=click.Path(exists=True, path_type=Path),
+    help="Channel JSON file (default: archive/{channel-id}.json)",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    default="archive",
+    help="Archive directory (default: archive/)",
+)
+def status(channel_id: str | None, input_file: Path | None, output_dir: Path):
+    """Show archival progress for a channel.
+
+    Displays total videos, downloaded, and uploaded to S3.
+
+    Example:
+        ytarchive status --channel-id UC3clbBht0DU9hCSKvoP-Z_Q
+    """
+    # Determine input file
+    if input_file is None:
+        if channel_id is None:
+            console.print("[red]Error: Must provide either --channel-id or --input-file[/red]")
+            raise click.Abort()
+        input_file = Path("archive") / f"{channel_id}.json"
+
+    if not input_file.exists():
+        console.print(f"[red]Error: File not found: {input_file}[/red]")
+        hint_id = channel_id or "CHANNEL_ID"
+        console.print(f"[yellow]Hint: Run 'ytarchive list --channel-id {hint_id}' first[/yellow]")
+        raise click.Abort()
+
+    # Load videos from JSON
+    console.print(f"[cyan]Reading:[/cyan] {input_file}")
+    video_data = json.loads(input_file.read_text())
+    videos = [Video(**v) for v in video_data]
+
+    total = len(videos)
+    downloaded = 0
+    uploaded_s3 = 0
+    partial = 0  # Downloaded but not uploaded
+
+    output_path = Path(output_dir)
+
+    # Check status of each video
+    for video in videos:
+        video_dir = output_path / video.id
+        manifest_path = video_dir / "manifest.json"
+
+        if manifest_path.exists():
+            manifest = ArchiveManifest.model_validate_json(manifest_path.read_text())
+
+            if manifest.s3_uploaded:
+                uploaded_s3 += 1
+            else:
+                partial += 1
+
+            downloaded += 1
+        elif (video_dir / "video.mp4").exists():
+            # Has video but no manifest
+            downloaded += 1
+            partial += 1
+
+    # Calculate percentages
+    downloaded_pct = (downloaded / total * 100) if total > 0 else 0
+    uploaded_pct = (uploaded_s3 / total * 100) if total > 0 else 0
+
+    # Display results
+    console.print(f"\n[bold]Archive Status:[/bold]")
+    console.print(f"  Total videos:     {total}")
+    console.print(f"  Downloaded:       {downloaded} ({downloaded_pct:.1f}%)")
+    console.print(f"  Uploaded to S3:   {uploaded_s3} ({uploaded_pct:.1f}%)")
+    if partial > 0:
+        console.print(f"  [yellow]Local only:[/yellow]      {partial} (not uploaded)")
+    remaining = total - downloaded
+    if remaining > 0:
+        console.print(f"  [cyan]Remaining:[/cyan]        {remaining}")
+    else:
+        console.print(f"\n[bold green]✓ All videos archived![/bold green]")
 
 
 if __name__ == "__main__":
