@@ -28,7 +28,8 @@ def cli():
 @click.option(
     "--channel-id",
     required=True,
-    help="YouTube channel ID, username, or @handle",
+    envvar="CHANNEL",
+    help="YouTube channel ID, username, or @handle (or set CHANNEL)",
 )
 @click.option(
     "--max-results",
@@ -94,7 +95,8 @@ def list(channel_id: str, max_results: int | None, output: Path, client_secrets:
 @cli.command(context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--channel-id",
-    help="YouTube channel ID, username, or @handle",
+    envvar="CHANNEL",
+    help="YouTube channel ID, username, or @handle (or set CHANNEL)",
 )
 @click.option(
     "--video-ids",
@@ -310,7 +312,8 @@ def archive(
 @cli.command(context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--channel-id",
-    help="YouTube channel ID to check (uses JSON filename)",
+    envvar="CHANNEL",
+    help="YouTube channel ID to check (uses JSON filename; or set CHANNEL)",
 )
 @click.option(
     "--input-file",
